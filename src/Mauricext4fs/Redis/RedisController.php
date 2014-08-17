@@ -15,6 +15,51 @@ class RedisController {
     }
 
     /**
+     * Basic functionality get, set, delete
+     */
+    public function get($strKey)
+    {
+        $arrReturn = array();
+        $objServer = $this->getInstance();
+
+        $strMsg = sprintf("GET %s", $strKey);
+        $strResponse = $this->sendFormattedCommand($strMsg);
+        $numLength = intval(str_replace("$", "", $strResponse));
+        if ($numLength < 1) {
+            // Key does not exist
+            return;
+        }
+        // Getting the actual value
+        $strResponse = fread($objServer, $numLength);
+        // Remove enclosing quotes from value
+        //$strResponse = substr($strResponse, 1, -1);
+        // Getting the carriage return and disregard it
+        //$strAbfall = fgets($objServer);
+        // Adding the value to the array
+        return $strResponse;
+    }
+
+    public function set($strKey, $strValue)
+    {
+        $objServer = $this->getInstance();
+        
+        $strMsg = sprintf("SET %s %s", $strKey, $strValue);
+        $this->sendFormattedCommand($strMsg);
+
+        return;
+    }
+
+    public function delete($strKey)
+    {
+        $objServer = $this->getInstance();
+        
+        $strMsg = sprintf("DEL %s", $strKey);
+        $this->sendFormattedCommand($strMsg);
+
+        return;
+    }
+
+    /**
      * This will get you the value from a list from the top (redis left)
      * to $numLimit it will also call automatically the trimList method 
      * to enforce the limit on the list before getting you the result
