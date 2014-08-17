@@ -10,7 +10,7 @@ class RedisController {
 
     public function __construct()
     {
-    
+
     }
 
     public function getList($strKey, $numLimit = 0)
@@ -43,7 +43,61 @@ class RedisController {
         
         $strMsg = sprintf("RPUSH %s %s", $strKey, $strValue);
         $this->sendFormattedCommand($strMsg);
-        
+
+        return;
+    }
+
+    public function getSet($strKey)
+    {
+        $arrReturn = array();
+        $objServer = $this->getInstance();
+
+        $strMsg = sprintf("SMEMBERS %s", $strKey);
+        $strResponse = $this->sendFormattedCommand($strMsg);
+        $numResult = intval(str_replace("*", "", $strResponse));
+        for ($i=0; $i<$numResult; $i++) {
+            // Geting the length of result from response
+            $strResponse = fgets($objServer);
+            $numLength = intval(str_replace("$", "", $strResponse));
+            // Getting the actual value
+            $strResponse = fread($objServer, $numLength);
+            // Remove enclosing quotes from value
+            //$strResponse = substr($strResponse, 1, -1);
+            // Getting the carriage return and disregard it
+            $strAbfall = fgets($objServer);
+            // Adding the value to the array
+            $arrReturn[] = $strResponse;
+        }
+        return $arrReturn;
+    }
+
+    public function addValueToSet($strKey, $strValue)
+    {
+        $objServer = $this->getInstance();
+
+        $strMsg = sprintf("SADD %s %s", $strKey, $strValue);
+        $this->sendFormattedCommand($strMsg);
+
+        return;
+    }
+
+    public function deleteFromSet($strKey, $strValue)
+    {
+        $objServer = $this->getInstance();
+
+        $strMsg = sprintf("SREM %s %s", $strKey, $strValue);
+        $this->sendFormattedCommand($strMsg);
+
+        return;
+    }
+
+    public function deleteSet($strKey)
+    {
+        $objServer = $this->getInstance();
+
+        $strMsg = sprintf("DEL %s", $strKey);
+        $this->sendFormattedCommand($strMsg);
+
         return;
     }
 
