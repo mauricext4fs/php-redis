@@ -15,8 +15,5 @@
         "psr-0": {
             "Mauricext4fs": "src/"
         }
-    },
-    "require": {
-        "php": ">=5.4.0"
     }
 }
