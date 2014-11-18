@@ -29,13 +29,9 @@ class RedisController {
             // Key does not exist
             return;
         }
-        // Getting the actual value
-        $strResponse = fread($objServer, $numLength);
-        // Remove enclosing quotes from value
-        //$strResponse = substr($strResponse, 1, -1);
-        // Getting the carriage return and disregard it
-        //$strAbfall = fgets($objServer);
-        // Adding the value to the array
+        // Getting the actual value + the line feed
+        $strResponse = trim(fread($objServer, $numLength + 2));
+
         return $strResponse;
     }
 
