@@ -56,6 +56,101 @@ class RedisController {
     }
 
     /**
+     * Useful to get the number of entries in a list
+     *
+     * @author Adam Mackiewicz
+     * @param String strKey
+     * @return Int numResult
+     */
+    public function getListLength ($strKey) {
+        $strMsg = sprintf("LLEN %s", $strKey);
+        $strResponse = $this->sendFormattedCommand($strMsg);
+        $numResult = intval(substr($strResponse, 1));
+
+        return $numResult;
+    }
+
+    /**
+     * Useful to get the number of entries in a Set
+     *
+     * @author Adam Mackiewicz
+     * @param String strKey
+     * @return Int numResult
+     */
+    public function getSetLength ($strKey) {
+        $strMsg = sprintf("SCARD %s", $strKey);
+        $strResponse = $this->sendFormattedCommand($strMsg);
+        $numResult = intval(substr($strResponse, 1));
+
+        return $numResult;
+    }
+
+    /**
+     * Useful to get the number of entries in Sorted Set
+     *
+     * @author Adam Mackiewicz
+     * @param String strKey
+     * @return Int numResult
+     */
+    public function getSortedSetLength ($strKey) {
+        $strMsg = sprintf("ZCARD %s", $strKey);
+        $strResponse = $this->sendFormattedCommand($strMsg);
+        $numResult = intval(substr($strResponse, 1));
+
+        return $numResult;
+    }
+
+    /**
+     * Useful to get the number of entries for a givent key.
+     * Presently set, sorted_set and list (default) are supported.
+     *
+     * @author Adam Mackiewicz
+     * @param String strKey
+     * @param String strResourceType can be one of (set, sorted_set, list)
+     * @return Int numResult
+     */
+    public function getLength ($strKey, $strResourceType = 'list') {
+        $numResult = 0;
+
+        if ($strResourceType === 'set') {
+            $numResult = $this->getSetLength($strKey);
+        } elseif ($strResourceType === 'sorted_set') {
+            $numResult = $this->getSortedSetLength($strKey);
+        } else {
+            $numResult = $this->getListLength($strKey);
+        }
+
+        return $numResult;
+    }
+
+    /**
+     * Useful to get the number of entries for a givent key.
+     * Presently set, sorted_set and list (default) are supported.
+     *
+     * @author Adam Mackiewicz
+     * @param String strKey
+     * @param String strResourceType can be one of (set, sorted_set, list)
+     * @return Int numResult
+     */
+     public function getKeys($strNamePattern = '*') {
+        $arrReturn = array();
+        $objServer = $this->getInstance();
+
+        $strMsg = sprintf("KEYS %s", $strNamePattern);
+        $strResponse = $this->sendFormattedCommand($strMsg);
+        $numResult = intval(str_replace("*", "", $strResponse));
+        for ($i=0; $i<$numResult; $i++) {
+            $strResponse = fgets($objServer);
+            $numLength = intval(str_replace("$", "", $strResponse));
+            $strResponse = fread($objServer, $numLength);
+            $strAbfall = fgets($objServer);
+            $arrReturn[] = $strResponse;
+        }
+
+        return $arrReturn;
+    }
+
+    /**
      * This will get you the value from a list from the top (redis left)
      * to $numLimit it will also call automatically the trimList method 
      * to enforce the limit on the list before getting you the result
