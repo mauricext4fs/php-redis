@@ -1,7 +1,7 @@
 {
     "name": "mauricext4fs/php-redis",
     "homepage": "https://github.com/mauricext4fs/php-redis",
-    "description": "RedisController is a high performance PHP Redis client which implement some of the latest Redis functionalities. It is completely written in PHP and does not required anything else than PHP 5.4 and a local installation of Redis Server with Unix socket enabled.",
+    "description": "RedisController is a high performance PHP Redis client which implement some of the latest Redis functionalities. It is completely written in PHP and does not required anything else than PHP 5.4",
     "keywords": ["mauricext4fs", "redis", "redis-php", "php-redis", "php-redis", "phpRedis", "RedisPhp", "phpRedisController"],
     "type": "library",
     "license": "BSD-3",

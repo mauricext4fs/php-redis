@@ -1,17 +1,31 @@
 <?php
 /**
  * See licensing info in ../../LICENSE
+ * 
+ * Default behavoir is that the RedisController will try to connect 
+ * to redis unix socket situated at: /tmp/redis.sock
+ * Unless you pass the server host and port as argument to the 
+ * constructor.
+ * 
  */
 namespace Mauricext4fs\Redis;
 
 class RedisController {
 
     protected $objServer = null;
+    protected $strServerHost = null;
+    protected $strServerPort = null;
     private $arrListLimit = [];
 
-    public function __construct()
+    /**
+     * If you do not pass the host and port in arg 
+     * it is infer that you wish to connect through 
+     * unix socket with /tmp/redis.sock
+     */
+    public function __construct($strServerHost = "", $strServerPort = "")
     {
-
+        $this->strServerHost = $strServerHost;
+        $this->strServerPort = $strServerPort;
     }
 
     /**
@@ -354,12 +368,17 @@ class RedisController {
      */
     protected function getInstance()
     {
-        if(empty($this->objServer)) {
-            // Connecting
-            if (!file_exists("/tmp/redis.sock")) {
-                throw new \Exception("/tmp/redis.sock not existing");
+        if (empty($this->objServer)) {
+            if (empty($this->strServerHost)) {
+                // Connecting
+                if (!file_exists("/tmp/redis.sock")) {
+                    throw new \Exception("/tmp/redis.sock not existing or No Host / port provided");
+                }
+                $this->objServer = stream_socket_client("unix:///tmp/redis.sock", $errno, $errstr, 30);
+            } else {
+                $strStreamConnect = sprintf("tcp://%s:%d", $this->strServerHost, $this->strServerPort);
+                $this->objServer = stream_socket_client($strStreamConnect, $errno, $errstr, 30);
             }
-            $this->objServer = stream_socket_client("unix:///tmp/redis.sock", $errno, $errstr, 30);
             // Test connection
             $this->sendFormattedCommand("ping");
             if ($errno) {
