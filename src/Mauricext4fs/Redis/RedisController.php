@@ -29,6 +29,48 @@ class RedisController {
     }
 
     /**
+     * Ths method is used to convert the value pass to set, add, etc... 
+     * to a format that will pass through. For example, double quote 
+     * are use to contain string... if the value contain a JSON string 
+     * it will fail to be add to list or set.
+     *
+     * @param String $strValue
+     * @return Formated Value
+     */
+    protected function formatValueForCommandUse($strValue)
+    {
+        $strCleanValue = $strValue;
+
+        /*
+         * If the value has a quote or single quote then we need
+         * to escape it and quote it!
+         * We also need to double escape esacped 
+         * quote and / or double quote!!!
+         */
+        if (strpos($strValue, '"') !== false) {
+            // This is the case when a quote is found
+            /*$strCleanValue = preg_replace("/" . preg_quote('"', "/") . "/", preg_quote('\\"'), $strCleanValue);
+            $strCleanValue = preg_replace("/" . preg_quote('\\\\"', "/") . "/", preg_quote('\\\\\\"'), $strCleanValue);
+            $strCleanValue = sprintf('"%s"', $strCleanValue);*/
+            $strCleanValue = sprintf('"%s"', addslashes($strCleanValue));
+        } else if (strpos($strValue, "'") !== false) {
+            // Without quote but with single quote
+            /*$strCleanValue = preg_replace("/" . preg_quote("'", "/") . "/", preg_quote("\\'"), $strCleanValue);
+            $strCleanValue = preg_replace("/" . preg_quote("\\\\'", "/") . "/", preg_quote("\\\\\\'"), $strCleanValue);
+            $strCleanValue = sprintf('"%s"', $strCleanValue);*/
+            $strCleanValue = sprintf('"%s"', addslashes($strCleanValue));
+        } else if (strpos($strValue, " ") !== false) {
+            /*
+             * Finally anything else with a space without 
+             * quotes
+             */
+            $strCleanValue = sprintf('"%s"', $strCleanValue);
+        }
+
+        return $strCleanValue;
+    }
+
+    /**
      * Basic functionality get, set, delete
      */
     public function get($strKey)
@@ -36,6 +78,7 @@ class RedisController {
         $arrReturn = array();
         $objServer = $this->getInstance();
 
+        $strKey = $this->formatValueForCommandUse($strKey);
         $strMsg = sprintf("GET %s", $strKey);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numLength = intval(str_replace("$", "", $strResponse));
@@ -53,6 +96,8 @@ class RedisController {
     {
         $objServer = $this->getInstance();
         
+        $strValue = $this->formatValueForCommandUse($strValue);
+        $strKey = $this->formatValueForCommandUse($strKey);
         $strMsg = sprintf("SET %s %s", $strKey, $strValue);
         $this->sendFormattedCommand($strMsg);
 
@@ -63,6 +108,7 @@ class RedisController {
     {
         $objServer = $this->getInstance();
         
+        $strKey = $this->formatValueForCommandUse($strKey);
         $strMsg = sprintf("DEL %s", $strKey);
         $this->sendFormattedCommand($strMsg);
 
@@ -76,7 +122,8 @@ class RedisController {
      * @param String strKey
      * @return Int numResult
      */
-    public function getListLength ($strKey) {
+    public function getListLength($strKey) {
+        $strKey = $this->formatValueForCommandUse($strKey);
         $strMsg = sprintf("LLEN %s", $strKey);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(substr($strResponse, 1));
@@ -91,7 +138,8 @@ class RedisController {
      * @param String strKey
      * @return Int numResult
      */
-    public function getSetLength ($strKey) {
+    public function getSetLength($strKey) {
+        $strKey = $this->formatValueForCommandUse($strKey);
         $strMsg = sprintf("SCARD %s", $strKey);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(substr($strResponse, 1));
@@ -106,7 +154,8 @@ class RedisController {
      * @param String strKey
      * @return Int numResult
      */
-    public function getSortedSetLength ($strKey) {
+    public function getSortedSetLength($strKey) {
+        $strKey = $this->formatValueForCommandUse($strKey);
         $strMsg = sprintf("ZCARD %s", $strKey);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(substr($strResponse, 1));
@@ -123,7 +172,7 @@ class RedisController {
      * @param String strResourceType can be one of (set, sorted_set, list)
      * @return Int numResult
      */
-    public function getLength ($strKey, $strResourceType = 'list') {
+    public function getLength($strKey, $strResourceType = 'list') {
         $numResult = 0;
 
         if ($strResourceType === 'set') {
@@ -150,6 +199,7 @@ class RedisController {
         $arrReturn = array();
         $objServer = $this->getInstance();
 
+        $strNamePattern = $this->formatValueForCommandUse($strNamePattern);
         $strMsg = sprintf("KEYS %s", $strNamePattern);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(str_replace("*", "", $strResponse));
@@ -179,6 +229,7 @@ class RedisController {
             $this->trimList($strListName, $this->arrListLimit[$strListName]);
         }
 
+        $strListName = $this->formatValueForCommandUse($strListName);
         $strMsg = sprintf("LRANGE %s 0 %d", $strListName, ($numLimit === null) ? -1 : $numLimit);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(str_replace("*", "", $strResponse));
@@ -201,15 +252,16 @@ class RedisController {
 
     /**
      * Prior to version 2, this method was call getList,
-     * it give you the end of the list with the limit pass in arg
+     * it gives you the end of the list with the limit pass in arg
      *
-     * @param $numLimit HARDCODE TO 10'000
+     * @param $numLimit HARDCODED TO 10'000
      */
     public function getEndOfList($strListName, $numLimit = 0)
     {
         $arrReturn = array();
         $objServer = $this->getInstance();
 
+        $strListName = $this->formatValueForCommandUse($strListName);
         $strMsg = sprintf("LRANGE %s %d %d", $strListName, ($numLimit) ? $numLimit * -1 : -10000, ($numLimit) ? $numLimit : 10000);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(str_replace("*", "", $strResponse));
@@ -250,6 +302,7 @@ class RedisController {
     {
         $objServer = $this->getInstance();
         
+        $strListName = $this->formatValueForCommandUse($strListName);
         $strMsg = sprintf("LTRIM %s 0 %d", $strListName, $numLimit - 1);
         $this->sendFormattedCommand($strMsg);
 
@@ -259,7 +312,8 @@ class RedisController {
     public function addValueToList($strListName, $strValue)
     {
         $objServer = $this->getInstance();
-        
+        $strListName = $this->formatValueForCommandUse($strListName);
+        $strValue = $this->formatValueForCommandUse($strValue);
         $strMsg = sprintf("LPUSH %s %s", $strListName, $strValue);
         $this->sendFormattedCommand($strMsg);
 
@@ -269,7 +323,7 @@ class RedisController {
     public function addValueToEndOfList($strListName, $strValue)
     {
         $objServer = $this->getInstance();
-        
+        $strValue = $this->formatValueForCommandUse($strValue);
         $strMsg = sprintf("RPUSH %s %s", $strListName, $strValue);
         $this->sendFormattedCommand($strMsg);
 
@@ -280,6 +334,8 @@ class RedisController {
     {
         $objServer = $this->getInstance();
 
+        $strListName = $this->formatValueForCommandUse($strListName);
+        $strValue = $this->formatValueForCommandUse($strValue);
         $strMsg = sprintf("LREM %s 0 %s", $strListName, $strValue);
         $this->sendFormattedCommand($strMsg);
 
@@ -290,6 +346,7 @@ class RedisController {
     {
         $objServer = $this->getInstance();
 
+        $strListName = $this->formatValueForCommandUse($strListName);
         $strMsg = sprintf("DEL %s", $strListName);
         $this->sendFormattedCommand($strMsg);
 
@@ -301,6 +358,7 @@ class RedisController {
         $arrReturn = array();
         $objServer = $this->getInstance();
 
+        $strListName = $this->formatValueForCommandUse($strListName);
         $strMsg = sprintf("SMEMBERS %s", $strListName);
         $strResponse = $this->sendFormattedCommand($strMsg);
         $numResult = intval(str_replace("*", "", $strResponse));
@@ -324,6 +382,8 @@ class RedisController {
     {
         $objServer = $this->getInstance();
 
+        $strListName = $this->formatValueForCommandUse($strListName);
+        $strValue = $this->formatValueForCommandUse($strValue);
         $strMsg = sprintf("SADD %s %s", $strListName, $strValue);
         $this->sendFormattedCommand($strMsg);
 
@@ -333,7 +393,8 @@ class RedisController {
     public function deleteFromSet($strListName, $strValue)
     {
         $objServer = $this->getInstance();
-
+        $strListName = $this->formatValueForCommandUse($strListName);
+        $strValue = $this->formatValueForCommandUse($strValue);
         $strMsg = sprintf("SREM %s %s", $strListName, $strValue);
         $this->sendFormattedCommand($strMsg);
 
@@ -343,7 +404,7 @@ class RedisController {
     public function deleteSet($strListName)
     {
         $objServer = $this->getInstance();
-
+        $strListName = $this->formatValueForCommandUse($strListName);
         $strMsg = sprintf("DEL %s", $strListName);
         $this->sendFormattedCommand($strMsg);
 
@@ -361,11 +422,6 @@ class RedisController {
         return $strResponse;
     }
 
-
-    /**
-     * Feel free to overload this method if you wish to use network 
-     * base redis server
-     */
     protected function getInstance()
     {
         if (empty($this->objServer)) {
@@ -385,7 +441,7 @@ class RedisController {
                 throw new Exception(sprintf("%s\n", $errno));
             }
             if ($errstr) {
-               throw new Exception( printf("%s\n", $errstr));
+               throw new Exception(sprintf("%s\n", $errstr));
             }
         }
 
